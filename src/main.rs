@@ -1,8 +1,8 @@
-use crate::app::App;
+mod app;
+mod event;
+mod ui;
 
-pub mod app;
-pub mod event;
-pub mod ui;
+use app::App;
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
