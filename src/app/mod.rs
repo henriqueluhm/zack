@@ -159,6 +159,10 @@ impl App {
     fn handle_normal_mode(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('i') => self.mode = EditorMode::Insert,
+            KeyCode::Char('a') => {
+                self.events.send(AppEvent::MoveCursorRight);
+                self.mode = EditorMode::Insert
+            }
             KeyCode::Char('h') => self.events.send(AppEvent::MoveCursorLeft),
             KeyCode::Char('l') => self.events.send(AppEvent::MoveCursorRight),
             KeyCode::Char('j') => self.events.send(AppEvent::MoveCursorDown),
