@@ -1,5 +1,6 @@
 use crate::app::modes::EditorMode;
 use crate::event::{AppEvent, Event, EventHandler};
+use crossterm::{QueueableCommand, cursor};
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::{
@@ -7,6 +8,7 @@ use ratatui::{
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
 };
 use ropey::Rope;
+use std::io::{Write, stdout};
 
 pub mod modes;
 
@@ -51,7 +53,18 @@ impl App {
         frame.render_widget(self, area);
 
         let cursor_position = self.calculate_cursor_position(area);
+
+        let mut stdout = stdout();
+
         frame.set_cursor_position(cursor_position);
+
+        if self.mode == EditorMode::Insert {
+            stdout.queue(cursor::SetCursorStyle::SteadyBar).unwrap();
+        } else {
+            stdout.queue(cursor::SetCursorStyle::SteadyBlock).unwrap();
+        }
+
+        stdout.flush().unwrap();
     }
 
     fn calculate_cursor_position(&self, area: Rect) -> ratatui::layout::Position {
