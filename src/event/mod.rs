@@ -1,3 +1,4 @@
+use crate::app::modes::EditorMode;
 use color_eyre::eyre::WrapErr;
 use ratatui::crossterm::event::{self, Event as CrosstermEvent};
 use std::{
@@ -23,6 +24,7 @@ pub enum AppEvent {
     MoveCursorRight,
     MoveCursorUp,
     MoveCursorDown,
+    ChangeToMode(EditorMode),
     Quit,
 }
 
