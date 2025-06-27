@@ -1,4 +1,4 @@
-use crate::app::{App, modes::EditorMode};
+use crate::app::App;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Rect},
@@ -8,15 +8,10 @@ use ratatui::{
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let editor_mode = match self.mode {
-            EditorMode::Normal => "Normal",
-            EditorMode::Insert => "Insert",
-        };
-
         let block = Block::bordered()
             .title("zack")
             .title_alignment(Alignment::Center)
-            .title_bottom(editor_mode)
+            .title_bottom(self.mode.get_mode_label())
             .title_alignment(Alignment::Left)
             .border_type(BorderType::Rounded);
 
