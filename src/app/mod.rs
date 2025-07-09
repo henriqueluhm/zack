@@ -38,7 +38,7 @@ impl App {
     pub fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
         while self.running {
             terminal.draw(|frame| self.render(frame))?;
-            self.handle_event_handler()?;
+            self.handle_event()?;
         }
 
         Ok(())
@@ -51,7 +51,7 @@ impl App {
             .render_cursor(frame, self.mode.get_current_mode())
     }
 
-    pub fn handle_event_handler(&mut self) -> color_eyre::Result<()> {
+    pub fn handle_event(&mut self) -> color_eyre::Result<()> {
         match self.event_handler.next()? {
             Event::Tick => self.tick(),
             Event::Crossterm(event) => self.handle_crossterm_event(event),
@@ -78,36 +78,52 @@ impl App {
             }
 
             AppEvent::ChangeToMode(new_mode) => change_mode(new_mode, self),
+
+            // TODO: Move ropey buffer manipulations to its own module with event handling
             AppEvent::InsertChar(char) => {
                 let (line, col) = self.cursor.position;
                 let char_index = self.calculate_char_index(line, col);
                 self.buffer.insert_char(char_index, char);
-                self.cursor.position.1 += 1;
+
+                self.event_handler
+                    .send(AppEvent::Cursor(CursorEvent::MoveRight));
             }
             AppEvent::DeleteChar => {
                 let (line, col) = self.cursor.position;
-                if col > 0 {
+
+                if col == 0 && line > 0 {
+                    let prev_line_len = self.buffer.line(line - 1).len_chars();
+                    let char_index = self.calculate_char_index(line, 0);
+
+                    if char_index > 0 {
+                        self.buffer.remove(char_index - 1..char_index);
+
+                        self.event_handler
+                            .send(AppEvent::Cursor(CursorEvent::SetLinePosition(line - 1)));
+                        self.event_handler
+                            .send(AppEvent::Cursor(CursorEvent::SetColPosition(
+                                prev_line_len - 1,
+                            )));
+                    }
+                } else if col > 0 {
                     let char_index = self.calculate_char_index(line, col);
                     self.buffer.remove(char_index - 1..char_index);
-                    self.cursor.position.1 -= 1;
+                    self.event_handler
+                        .send(AppEvent::Cursor(CursorEvent::MoveLeft));
                 }
             }
-            AppEvent::MoveCursorLeft => {
-                if self.cursor.position.1 > 0 {
-                    self.cursor.position.1 -= 1;
-                }
+            AppEvent::InsertNewline => {
+                let (line, col) = self.cursor.position;
+                let char_index = self.calculate_char_index(line, col);
+
+                self.buffer.insert(char_index, "\n");
+
+                self.event_handler
+                    .send(AppEvent::Cursor(CursorEvent::MoveDown));
+                self.event_handler
+                    .send(AppEvent::Cursor(CursorEvent::MoveToLineStart));
             }
-            AppEvent::MoveCursorRight => {
-                self.cursor.position.1 += 1;
-            }
-            AppEvent::MoveCursorUp => {
-                if self.cursor.position.0 > 0 {
-                    self.cursor.position.0 -= 1;
-                }
-            }
-            AppEvent::MoveCursorDown => {
-                self.cursor.position.0 += 1;
-            }
+
             AppEvent::Quit => self.quit(),
         }
     }
