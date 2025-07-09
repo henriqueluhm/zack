@@ -1,4 +1,4 @@
-use crate::app::cursor::Cursor;
+use crate::app::cursor::{Cursor, CursorEvent};
 use crate::app::modes::normal::NormalMode;
 use crate::app::modes::{Mode, change_mode};
 use crate::event::{AppEvent, Event, EventHandler};
@@ -71,6 +71,12 @@ impl App {
 
     pub fn handle_app_event(&mut self, event: AppEvent) {
         match event {
+            AppEvent::Cursor(cursor_event) => {
+                if let Some(next_event) = self.cursor.handle_event(cursor_event, &self.buffer) {
+                    self.event_handler.send(next_event);
+                }
+            }
+
             AppEvent::ChangeToMode(new_mode) => change_mode(new_mode, self),
             AppEvent::InsertChar(char) => {
                 let (line, col) = self.cursor.position;
