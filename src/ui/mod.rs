@@ -22,8 +22,8 @@ impl Widget for &App {
 
         let paragraph = Paragraph::new(text)
             .block(block)
-            .fg(Color::Cyan)
-            .bg(Color::Black)
+            .fg(Color::Gray)
+            .bg(Color::Reset)
             .alignment(Alignment::Left);
 
         paragraph.render(area, buf);
