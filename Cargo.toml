@@ -11,3 +11,9 @@ crossterm = "0.28.1"
 ratatui = "0.29.0"
 color-eyre = "0.6.3"
 ropey = "1.6.1"
+log = "0.4"
+simplelog = { version = "0.12", optional = true }
+
+[features]
+default = []
+debug-logs = ["simplelog"]
