@@ -1,5 +1,5 @@
 use super::Mode;
-use crate::app::modes::EditorMode;
+use crate::app::{cursor::CursorEvent, modes::EditorMode};
 use crate::event::AppEvent;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -22,13 +22,13 @@ impl Mode for NormalMode {
             KeyCode::Char('v') => events.push(AppEvent::ChangeToMode(EditorMode::Visual)),
             KeyCode::Char('i') => events.push(AppEvent::ChangeToMode(EditorMode::Insert)),
             KeyCode::Char('a') => {
-                events.push(AppEvent::MoveCursorRight);
+                events.push(AppEvent::Cursor(CursorEvent::MoveRight));
                 events.push(AppEvent::ChangeToMode(EditorMode::Insert));
             }
-            KeyCode::Char('h') => events.push(AppEvent::MoveCursorLeft),
-            KeyCode::Char('l') => events.push(AppEvent::MoveCursorRight),
-            KeyCode::Char('j') => events.push(AppEvent::MoveCursorDown),
-            KeyCode::Char('k') => events.push(AppEvent::MoveCursorUp),
+            KeyCode::Char('h') => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
+            KeyCode::Char('l') => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),
+            KeyCode::Char('j') => events.push(AppEvent::Cursor(CursorEvent::MoveDown)),
+            KeyCode::Char('k') => events.push(AppEvent::Cursor(CursorEvent::MoveUp)),
             KeyCode::Char('q') | KeyCode::Esc => events.push(AppEvent::Quit),
             KeyCode::Char('c' | 'C') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 events.push(AppEvent::Quit);

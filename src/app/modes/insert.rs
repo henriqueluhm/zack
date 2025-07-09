@@ -1,5 +1,5 @@
 use super::Mode;
-use crate::app::modes::EditorMode;
+use crate::app::{cursor::CursorEvent, modes::EditorMode};
 use crate::event::AppEvent;
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -21,11 +21,12 @@ impl Mode for InsertMode {
         match key.code {
             KeyCode::Esc => events.push(AppEvent::ChangeToMode(EditorMode::Normal)),
             KeyCode::Backspace => events.push(AppEvent::DeleteChar),
-            KeyCode::Left => events.push(AppEvent::MoveCursorLeft),
-            KeyCode::Right => events.push(AppEvent::MoveCursorRight),
-            KeyCode::Up => events.push(AppEvent::MoveCursorUp),
-            KeyCode::Down => events.push(AppEvent::MoveCursorDown),
+            KeyCode::Left => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
+            KeyCode::Right => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),
+            KeyCode::Up => events.push(AppEvent::Cursor(CursorEvent::MoveUp)),
+            KeyCode::Down => events.push(AppEvent::Cursor(CursorEvent::MoveDown)),
             KeyCode::Char(c) => events.push(AppEvent::InsertChar(c)),
+            KeyCode::Enter => events.push(AppEvent::InsertNewline),
             _ => {}
         }
 
