@@ -155,12 +155,11 @@ impl Cursor {
         if last_char == '\n' { len - 1 } else { len }
     }
 
-    fn set_cursor_style(&self, current_mode: EditorMode) -> SetCursorStyle {
-        if current_mode == EditorMode::Insert {
-            return cursor::SetCursorStyle::SteadyBar;
+    pub fn set_cursor_style(&self, current_mode: EditorMode) -> SetCursorStyle {
+        match current_mode {
+            EditorMode::Insert { .. } => cursor::SetCursorStyle::SteadyBar,
+            _ => cursor::SetCursorStyle::SteadyBlock,
         }
-
-        cursor::SetCursorStyle::SteadyBlock
     }
 
     fn calculate_cursor_position(&self, area: Rect) -> ratatui::layout::Position {

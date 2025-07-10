@@ -20,10 +20,12 @@ impl Mode for NormalMode {
 
         match key.code {
             KeyCode::Char('v') => events.push(AppEvent::ChangeToMode(EditorMode::Visual)),
-            KeyCode::Char('i') => events.push(AppEvent::ChangeToMode(EditorMode::Insert)),
+            KeyCode::Char('i') => {
+                events.push(AppEvent::ChangeToMode(EditorMode::Insert { append: false }))
+            }
             KeyCode::Char('a') => {
                 events.push(AppEvent::Cursor(CursorEvent::MoveRight));
-                events.push(AppEvent::ChangeToMode(EditorMode::Insert));
+                events.push(AppEvent::ChangeToMode(EditorMode::Insert { append: true }));
             }
             KeyCode::Char('h') => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
             KeyCode::Char('l') => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),

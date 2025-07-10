@@ -4,7 +4,9 @@ use crate::event::AppEvent;
 use crossterm::event::{KeyCode, KeyEvent};
 
 #[derive(Debug)]
-pub struct InsertMode;
+pub struct InsertMode {
+    pub append: bool,
+}
 
 impl Mode for InsertMode {
     fn get_mode_label(&self) -> &'static str {
@@ -12,14 +14,19 @@ impl Mode for InsertMode {
     }
 
     fn get_current_mode(&self) -> EditorMode {
-        EditorMode::Insert
+        EditorMode::Insert {
+            append: self.append,
+        }
     }
 
     fn handle_key(&self, key: KeyEvent) -> Vec<AppEvent> {
         let mut events = vec![];
 
         match key.code {
-            KeyCode::Esc => events.push(AppEvent::ChangeToMode(EditorMode::Normal)),
+            KeyCode::Esc => {
+                events.push(AppEvent::Cursor(CursorEvent::MoveLeft));
+                events.push(AppEvent::ChangeToMode(EditorMode::Normal));
+            }
             KeyCode::Backspace => events.push(AppEvent::DeleteChar),
             KeyCode::Left => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
             KeyCode::Right => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),

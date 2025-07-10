@@ -14,7 +14,7 @@ pub mod visual;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditorMode {
-    Insert,
+    Insert { append: bool },
     Normal,
     Visual,
 }
@@ -27,7 +27,7 @@ pub trait Mode: Debug {
 
 pub fn change_mode(new_mode: EditorMode, app: &mut App) {
     match new_mode {
-        EditorMode::Insert => app.mode = Box::new(InsertMode),
+        EditorMode::Insert { append } => app.mode = Box::new(InsertMode { append }),
         EditorMode::Normal => app.mode = Box::new(NormalMode),
         EditorMode::Visual => app.mode = Box::new(VisualMode),
     }
