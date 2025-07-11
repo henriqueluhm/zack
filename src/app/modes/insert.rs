@@ -1,12 +1,12 @@
 use super::Mode;
+use crate::app::buffer::BufferEvent;
 use crate::app::{cursor::CursorEvent, modes::EditorMode};
 use crate::event::AppEvent;
+use crate::types::position::Position;
 use crossterm::event::{KeyCode, KeyEvent};
 
 #[derive(Debug)]
-pub struct InsertMode {
-    pub append: bool,
-}
+pub struct InsertMode;
 
 impl Mode for InsertMode {
     fn get_mode_label(&self) -> &'static str {
@@ -14,12 +14,10 @@ impl Mode for InsertMode {
     }
 
     fn get_current_mode(&self) -> EditorMode {
-        EditorMode::Insert {
-            append: self.append,
-        }
+        EditorMode::Insert
     }
 
-    fn handle_key(&self, key: KeyEvent) -> Vec<AppEvent> {
+    fn handle_key(&self, key: KeyEvent, current_cursor_position: Position) -> Vec<AppEvent> {
         let mut events = vec![];
 
         match key.code {
@@ -27,13 +25,20 @@ impl Mode for InsertMode {
                 events.push(AppEvent::Cursor(CursorEvent::MoveLeft));
                 events.push(AppEvent::ChangeToMode(EditorMode::Normal));
             }
-            KeyCode::Backspace => events.push(AppEvent::DeleteChar),
             KeyCode::Left => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
             KeyCode::Right => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),
             KeyCode::Up => events.push(AppEvent::Cursor(CursorEvent::MoveUp)),
             KeyCode::Down => events.push(AppEvent::Cursor(CursorEvent::MoveDown)),
-            KeyCode::Char(c) => events.push(AppEvent::InsertChar(c)),
-            KeyCode::Enter => events.push(AppEvent::InsertNewline),
+            KeyCode::Backspace => events.push(AppEvent::Buffer(BufferEvent::DeleteChar {
+                position: current_cursor_position,
+            })),
+            KeyCode::Char(char) => events.push(AppEvent::Buffer(BufferEvent::InsertChar {
+                char,
+                position: current_cursor_position,
+            })),
+            KeyCode::Enter => events.push(AppEvent::Buffer(BufferEvent::InsertNewline {
+                position: current_cursor_position,
+            })),
             _ => {}
         }
 

@@ -1,4 +1,4 @@
-use crate::app::{cursor::CursorEvent, modes::EditorMode};
+use crate::app::{buffer::BufferEvent, cursor::CursorEvent, modes::EditorMode};
 use color_eyre::eyre::WrapErr;
 use ratatui::crossterm::event::{self, Event as CrosstermEvent};
 use std::{
@@ -18,9 +18,7 @@ pub enum Event {
 
 #[derive(Clone, Debug)]
 pub enum AppEvent {
-    InsertChar(char),
-    DeleteChar,
-    InsertNewline,
+    Buffer(BufferEvent),
     Cursor(CursorEvent),
     ChangeToMode(EditorMode),
     Quit,

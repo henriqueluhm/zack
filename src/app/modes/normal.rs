@@ -1,6 +1,7 @@
 use super::Mode;
 use crate::app::{cursor::CursorEvent, modes::EditorMode};
 use crate::event::AppEvent;
+use crate::types::position::Position;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 #[derive(Debug)]
@@ -15,17 +16,15 @@ impl Mode for NormalMode {
         EditorMode::Normal
     }
 
-    fn handle_key(&self, key: KeyEvent) -> Vec<AppEvent> {
+    fn handle_key(&self, key: KeyEvent, _: Position) -> Vec<AppEvent> {
         let mut events = vec![];
 
         match key.code {
             KeyCode::Char('v') => events.push(AppEvent::ChangeToMode(EditorMode::Visual)),
-            KeyCode::Char('i') => {
-                events.push(AppEvent::ChangeToMode(EditorMode::Insert { append: false }))
-            }
+            KeyCode::Char('i') => events.push(AppEvent::ChangeToMode(EditorMode::Insert)),
             KeyCode::Char('a') => {
                 events.push(AppEvent::Cursor(CursorEvent::MoveRight));
-                events.push(AppEvent::ChangeToMode(EditorMode::Insert { append: true }));
+                events.push(AppEvent::ChangeToMode(EditorMode::Insert));
             }
             KeyCode::Char('h') => events.push(AppEvent::Cursor(CursorEvent::MoveLeft)),
             KeyCode::Char('l') => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),

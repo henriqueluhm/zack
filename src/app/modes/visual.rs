@@ -1,6 +1,6 @@
 use super::Mode;
-use crate::app::modes::EditorMode;
 use crate::event::AppEvent;
+use crate::{app::modes::EditorMode, types::position::Position};
 use crossterm::event::{KeyCode, KeyEvent};
 
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl Mode for VisualMode {
         EditorMode::Visual
     }
 
-    fn handle_key(&self, key: KeyEvent) -> Vec<AppEvent> {
+    fn handle_key(&self, key: KeyEvent, _: Position) -> Vec<AppEvent> {
         let mut events = vec![];
 
         if key.code == KeyCode::Esc {
