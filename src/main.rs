@@ -1,5 +1,6 @@
 mod app;
 mod event;
+mod types;
 mod ui;
 
 use app::App;

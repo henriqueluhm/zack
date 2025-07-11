@@ -1,15 +1,16 @@
+use crate::app::buffer::Buffer;
+use crate::types::position::Position;
 use crate::{app::modes::EditorMode, event::AppEvent};
 use crossterm::{
     QueueableCommand,
     cursor::{self, SetCursorStyle},
 };
 use ratatui::{Frame, layout::Rect};
-use ropey::Rope;
 use std::io::{Write, stdout};
 
 #[derive(Debug)]
 pub struct Cursor {
-    pub position: (usize, usize),
+    pub position: Position,
 }
 
 #[derive(Clone, Debug)]
@@ -33,48 +34,31 @@ impl Default for Cursor {
 
 impl Cursor {
     pub fn new() -> Self {
-        Self { position: (0, 0) }
+        Self {
+            position: Position::new(0, 0),
+        }
     }
 
-    pub fn handle_event(&mut self, event: CursorEvent, buffer: &Rope) -> Option<AppEvent> {
+    pub fn handle_event(&mut self, event: CursorEvent, buffer: &Buffer) -> Vec<AppEvent> {
+        let mut events = vec![];
+
         match event {
-            CursorEvent::MoveLeft => {
-                self.move_left();
-                None
-            }
-            CursorEvent::MoveRight => {
-                self.move_right(buffer);
-                None
-            }
-            CursorEvent::MoveUp => {
-                self.move_up(buffer);
-                None
-            }
-            CursorEvent::MoveDown => {
-                self.move_down(buffer);
-                None
-            }
-            CursorEvent::MoveToLineStart => {
-                self.move_to_line_start();
-                None
-            }
-            CursorEvent::MoveToLineEnd => {
-                self.move_to_line_end(buffer);
-                None
+            CursorEvent::MoveLeft => events.extend(self.move_left()),
+            CursorEvent::MoveRight => events.extend(self.move_right(buffer)),
+            CursorEvent::MoveUp => events.extend(self.move_up(buffer)),
+            CursorEvent::MoveDown => events.extend(self.move_down(buffer)),
+            CursorEvent::MoveToLineStart => events.extend(self.move_to_line_start()),
+            CursorEvent::MoveToLineEnd => events.extend(self.move_to_line_end(buffer)),
+            CursorEvent::SetColPosition(col) => events.extend(self.set_col_position(col, buffer)),
+            CursorEvent::SetLinePosition(line) => {
+                events.extend(self.set_line_position(line, buffer))
             }
             CursorEvent::SetPosition { line, col } => {
-                self.set_position(line, col, buffer);
-                None
-            }
-            CursorEvent::SetLinePosition(line) => {
-                self.set_line_position(line, buffer);
-                None
-            }
-            CursorEvent::SetColPosition(col) => {
-                self.set_col_position(col, buffer);
-                None
+                events.extend(self.set_position(line, col, buffer))
             }
         }
+
+        events
     }
 
     pub fn render_cursor(&self, frame: &mut Frame, current_mode: EditorMode) {
@@ -86,76 +70,80 @@ impl Cursor {
         stdout.flush().unwrap();
     }
 
-    pub fn move_left(&mut self) {
-        if self.position.1 > 0 {
-            self.position.1 -= 1;
+    fn move_left(&mut self) -> Vec<AppEvent> {
+        if self.position.col > 0 {
+            self.position.col -= 1;
         }
+
+        vec![]
     }
 
-    pub fn move_right(&mut self, buffer: &Rope) {
-        let max_col = self.max_visible_col(buffer);
+    fn move_right(&mut self, buffer: &Buffer) -> Vec<AppEvent> {
+        let max_col = buffer.max_visible_col(&self.position);
 
-        if self.position.1 < max_col {
-            self.position.1 += 1;
+        if self.position.col < max_col {
+            self.position.col += 1;
         }
+
+        vec![]
     }
 
-    pub fn move_up(&mut self, buffer: &Rope) {
-        if self.position.0 > 0 {
-            self.position.0 -= 1;
-            self.clamp_col(buffer);
+    fn move_up(&mut self, buffer: &Buffer) -> Vec<AppEvent> {
+        if self.position.line > 0 {
+            self.position.line -= 1;
+            self.position.col = buffer.clamp_col_position(&self.position);
         }
+
+        vec![]
     }
 
-    pub fn move_down(&mut self, buffer: &Rope) {
+    fn move_down(&mut self, buffer: &Buffer) -> Vec<AppEvent> {
         let total_lines = buffer.len_lines();
 
-        if self.position.0 + 1 < total_lines {
-            self.position.0 += 1;
-            self.clamp_col(buffer);
+        if self.position.line + 1 < total_lines {
+            self.position.line += 1;
+            self.position.col = buffer.clamp_col_position(&self.position);
         }
+
+        vec![]
     }
 
-    pub fn move_to_line_start(&mut self) {
-        self.position.1 = 0;
+    fn move_to_line_start(&mut self) -> Vec<AppEvent> {
+        self.position.col = 0;
+
+        vec![]
     }
 
-    pub fn move_to_line_end(&mut self, buffer: &Rope) {
-        self.position.1 = self.max_visible_col(buffer);
+    fn move_to_line_end(&mut self, buffer: &Buffer) -> Vec<AppEvent> {
+        self.position.col = buffer.max_visible_col(&self.position);
+
+        vec![]
     }
 
-    pub fn set_position(&mut self, line: usize, col: usize, buffer: &Rope) {
+    fn set_position(&mut self, line: usize, col: usize, buffer: &Buffer) -> Vec<AppEvent> {
         self.set_line_position(line, buffer);
         self.set_col_position(col, buffer);
+
+        vec![]
     }
 
-    pub fn set_line_position(&mut self, line: usize, buffer: &Rope) {
+    fn set_line_position(&mut self, line: usize, buffer: &Buffer) -> Vec<AppEvent> {
         let total_lines = buffer.len_lines().saturating_sub(1);
-        self.position.0 = line.min(total_lines);
-        self.clamp_col(buffer);
+
+        self.position.line = line.min(total_lines);
+        self.position.col = buffer.clamp_col_position(&self.position);
+
+        vec![]
     }
 
-    pub fn set_col_position(&mut self, col: usize, buffer: &Rope) {
-        let max_col = self.max_visible_col(buffer);
-        self.position.1 = col.min(max_col);
+    fn set_col_position(&mut self, col: usize, buffer: &Buffer) -> Vec<AppEvent> {
+        let max_col = buffer.max_visible_col(&self.position);
+        self.position.col = col.min(max_col);
+
+        vec![]
     }
 
-    fn clamp_col(&mut self, buffer: &Rope) {
-        self.position.1 = self.position.1.min(self.max_visible_col(buffer));
-    }
-
-    fn max_visible_col(&self, buffer: &Rope) -> usize {
-        let line = buffer.line(self.position.0);
-        let len = line.len_chars();
-        if len == 0 {
-            return 0;
-        }
-
-        let last_char = line.char(len.saturating_sub(1));
-        if last_char == '\n' { len - 1 } else { len }
-    }
-
-    pub fn set_cursor_style(&self, current_mode: EditorMode) -> SetCursorStyle {
+    fn set_cursor_style(&self, current_mode: EditorMode) -> SetCursorStyle {
         match current_mode {
             EditorMode::Insert { .. } => cursor::SetCursorStyle::SteadyBar,
             _ => cursor::SetCursorStyle::SteadyBlock,
@@ -170,10 +158,14 @@ impl Cursor {
             height: area.height.saturating_sub(2),
         };
 
-        let (line, col) = self.position;
-
-        let clamped_line = line.min(text_area.height.saturating_sub(1) as usize);
-        let clamped_col = col.min(text_area.width.saturating_sub(1) as usize);
+        let clamped_line = self
+            .position
+            .line
+            .min(text_area.height.saturating_sub(1) as usize);
+        let clamped_col = self
+            .position
+            .col
+            .min(text_area.width.saturating_sub(1) as usize);
 
         ratatui::layout::Position {
             x: text_area.x + clamped_col as u16,
