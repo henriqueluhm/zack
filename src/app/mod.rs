@@ -79,24 +79,24 @@ impl App {
     fn handle_app_event(&mut self, event: AppEvent) {
         match event {
             AppEvent::Cursor(cursor_event) => {
-                let returned_events = self.cursor.handle_event(cursor_event, &self.buffer);
-
-                for event in returned_events {
-                    self.event_handler.send(event);
-                }
+                let next_events = self.cursor.handle_event(cursor_event, &self.buffer);
+                self.dispatch_multiple_events(next_events);
             }
 
             AppEvent::Buffer(buffer_event) => {
-                let returned_events = self.buffer.handle_event(buffer_event);
-
-                for event in returned_events {
-                    self.event_handler.send(event);
-                }
+                let next_events = self.buffer.handle_event(buffer_event);
+                self.dispatch_multiple_events(next_events);
             }
 
             AppEvent::ChangeToMode(new_mode) => change_mode(new_mode, self),
 
             AppEvent::Quit => self.quit(),
+        }
+    }
+
+    fn dispatch_multiple_events(&mut self, events: Vec<AppEvent>) {
+        for event in events {
+            self.event_handler.send(event);
         }
     }
 }
