@@ -1,4 +1,3 @@
-use crate::app::{buffer::BufferEvent, cursor::CursorEvent, file::FileEvent, modes::EditorMode};
 use color_eyre::eyre::WrapErr;
 use ratatui::crossterm::event::{self, Event as CrosstermEvent};
 use std::{
@@ -16,13 +15,18 @@ pub enum Event {
     App(AppEvent),
 }
 
+pub use crate::app::buffer::BufferEvent;
+pub use crate::app::cursor::CursorEvent;
+pub use crate::app::file::FileEvent;
+use crate::{app::modes::EditorMode, ui::Component};
+
 #[derive(Clone, Debug)]
 pub enum AppEvent {
     Buffer(BufferEvent),
     Cursor(CursorEvent),
     File(FileEvent),
+    ChangeFocus(Component),
     ChangeToMode(EditorMode),
-    PromptForFilename,
     Quit,
 }
 

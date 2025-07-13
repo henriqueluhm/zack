@@ -1,8 +1,7 @@
 use super::Mode;
-use crate::app::buffer::BufferEvent;
-use crate::app::{cursor::CursorEvent, modes::EditorMode};
-use crate::event::AppEvent;
+use crate::event::{AppEvent, BufferEvent};
 use crate::types::position::Position;
+use crate::{app::modes::EditorMode, event::CursorEvent};
 use crossterm::event::{KeyCode, KeyEvent};
 
 #[derive(Debug)]

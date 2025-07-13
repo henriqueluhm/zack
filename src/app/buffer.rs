@@ -1,4 +1,7 @@
-use crate::{app::cursor::CursorEvent, event::AppEvent, types::position::Position};
+use crate::{
+    event::{AppEvent, CursorEvent},
+    types::position::Position,
+};
 use ropey::{Rope, iter::Lines};
 
 #[derive(Debug)]

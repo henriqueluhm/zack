@@ -1,6 +1,6 @@
-use crate::app::buffer::Buffer;
+use crate::app::{buffer::Buffer, modes::EditorMode};
+use crate::event::AppEvent;
 use crate::types::position::Position;
-use crate::{app::modes::EditorMode, event::AppEvent};
 use crossterm::{
     QueueableCommand,
     cursor::{self, SetCursorStyle},

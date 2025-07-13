@@ -6,8 +6,8 @@ use ratatui::{
     widgets::{Block, BorderType, Paragraph, Widget},
 };
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum FocusState {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Component {
     Editor,
     FilenamePrompt,
 }
@@ -34,7 +34,7 @@ impl Widget for &App {
 
         paragraph.render(area, buf);
 
-        if self.focus == FocusState::FilenamePrompt {
+        if self.focus == Component::FilenamePrompt {
             let input = format!("Save as: {}", self.filename_input);
             let prompt = Paragraph::new(input)
                 .block(

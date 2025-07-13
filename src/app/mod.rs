@@ -1,15 +1,14 @@
-use std::path::PathBuf;
-
 use crate::app::buffer::Buffer;
 use crate::app::cursor::Cursor;
-use crate::app::file::{File, FileEvent};
+use crate::app::file::File;
 use crate::app::modes::normal::NormalMode;
 use crate::app::modes::{Mode, change_mode};
-use crate::event::{AppEvent, Event, EventHandler};
-use crate::ui::FocusState;
+use crate::event::{AppEvent, Event, EventHandler, FileEvent};
+use crate::ui::Component;
 use crossterm::event::KeyCode;
 use ratatui::DefaultTerminal;
 use ratatui::Frame;
+use std::path::PathBuf;
 
 pub mod buffer;
 pub mod cursor;
@@ -19,7 +18,7 @@ pub mod modes;
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    pub focus: FocusState,
+    pub focus: Component,
     pub filename_input: String,
     pub mode: Box<dyn Mode>,
     pub cursor: Cursor,
@@ -43,7 +42,7 @@ impl App {
             mode: Box::new(NormalMode),
             cursor: Cursor::new(),
             event_handler: EventHandler::new(),
-            focus: FocusState::Editor,
+            focus: Component::Editor,
             filename_input: String::from(""),
         }
     }
@@ -83,9 +82,9 @@ impl App {
     fn handle_crossterm_event(&mut self, event: crossterm::event::Event) {
         if let crossterm::event::Event::Key(key_event) = event {
             match self.focus {
-                FocusState::FilenamePrompt => match key_event.code {
+                Component::FilenamePrompt => match key_event.code {
                     KeyCode::Esc => {
-                        self.focus = FocusState::Editor;
+                        self.focus = Component::Editor;
                         self.filename_input.clear();
                     }
                     KeyCode::Enter => {
@@ -93,7 +92,7 @@ impl App {
                             self.file.path = Some(PathBuf::from(&self.filename_input));
                             let events = self.file.handle_event(FileEvent::Save, &self.buffer);
                             self.dispatch_multiple_events(events);
-                            self.focus = FocusState::Editor;
+                            self.focus = Component::Editor;
                             self.filename_input.clear();
                         }
                     }
@@ -106,7 +105,7 @@ impl App {
                     _ => {}
                 },
 
-                FocusState::Editor => {
+                Component::Editor => {
                     for event in self.mode.handle_key(key_event, self.cursor.position) {
                         self.event_handler.send(event);
                     }
@@ -132,9 +131,7 @@ impl App {
                 self.dispatch_multiple_events(next_events);
             }
 
-            AppEvent::PromptForFilename => {
-                self.focus = FocusState::FilenamePrompt;
-            }
+            AppEvent::ChangeFocus(component) => self.focus = component,
 
             AppEvent::ChangeToMode(new_mode) => change_mode(new_mode, self),
 

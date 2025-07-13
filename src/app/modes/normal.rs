@@ -1,8 +1,7 @@
 use super::Mode;
-use crate::app::file::FileEvent;
-use crate::app::{cursor::CursorEvent, modes::EditorMode};
-use crate::event::AppEvent;
+use crate::event::{AppEvent, FileEvent};
 use crate::types::position::Position;
+use crate::{app::modes::EditorMode, event::CursorEvent};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 #[derive(Debug)]

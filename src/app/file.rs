@@ -1,6 +1,5 @@
+use crate::{app::buffer::Buffer, event::AppEvent, ui::Component};
 use std::path::PathBuf;
-
-use crate::{app::buffer::Buffer, event::AppEvent};
 
 #[derive(Debug)]
 pub struct File {
@@ -45,7 +44,7 @@ impl File {
                 }
             },
 
-            None => vec![AppEvent::PromptForFilename],
+            None => vec![AppEvent::ChangeFocus(Component::FilenamePrompt)],
         }
     }
 
