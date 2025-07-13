@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::event::AppEvent;
+use crate::{app::buffer::Buffer, event::AppEvent};
 
 #[derive(Debug)]
 pub struct File {
@@ -23,17 +23,38 @@ impl File {
         Self { path }
     }
 
-    pub fn handle_event(&mut self, event: FileEvent) -> Vec<AppEvent> {
+    pub fn handle_event(&mut self, event: FileEvent, buffer: &Buffer) -> Vec<AppEvent> {
         let mut events = vec![];
 
         match event {
-            FileEvent::Save => events.extend(self.save_file()),
+            FileEvent::Save => events.extend(self.save_file(buffer)),
         }
 
         events
     }
 
-    fn save_file(&self) -> Vec<AppEvent> {
-        vec![]
+    fn save_file(&self, buffer: &Buffer) -> Vec<AppEvent> {
+        match &self.path {
+            Some(path) => match self.write_to_file(path, buffer) {
+                Ok(_) => {
+                    vec![]
+                }
+                Err(err) => {
+                    eprintln!("Failed to save file: {}", err);
+                    vec![]
+                }
+            },
+
+            None => vec![AppEvent::PromptForFilename],
+        }
+    }
+
+    fn write_to_file(&self, path: &PathBuf, buffer: &Buffer) -> std::io::Result<()> {
+        let mut content = String::new();
+        for line in buffer.lines() {
+            content.push_str(&line.to_string());
+        }
+
+        std::fs::write(path, content)
     }
 }

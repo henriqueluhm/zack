@@ -2,10 +2,12 @@ use std::path::PathBuf;
 
 use crate::app::buffer::Buffer;
 use crate::app::cursor::Cursor;
-use crate::app::file::File;
+use crate::app::file::{File, FileEvent};
 use crate::app::modes::normal::NormalMode;
 use crate::app::modes::{Mode, change_mode};
 use crate::event::{AppEvent, Event, EventHandler};
+use crate::ui::FocusState;
+use crossterm::event::KeyCode;
 use ratatui::DefaultTerminal;
 use ratatui::Frame;
 
@@ -17,6 +19,8 @@ pub mod modes;
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
+    pub focus: FocusState,
+    pub filename_input: String,
     pub mode: Box<dyn Mode>,
     pub cursor: Cursor,
     pub buffer: Buffer,
@@ -39,6 +43,8 @@ impl App {
             mode: Box::new(NormalMode),
             cursor: Cursor::new(),
             event_handler: EventHandler::new(),
+            focus: FocusState::Editor,
+            filename_input: String::from(""),
         }
     }
 
@@ -76,8 +82,35 @@ impl App {
 
     fn handle_crossterm_event(&mut self, event: crossterm::event::Event) {
         if let crossterm::event::Event::Key(key_event) = event {
-            for event in self.mode.handle_key(key_event, self.cursor.position) {
-                self.event_handler.send(event);
+            match self.focus {
+                FocusState::FilenamePrompt => match key_event.code {
+                    KeyCode::Esc => {
+                        self.focus = FocusState::Editor;
+                        self.filename_input.clear();
+                    }
+                    KeyCode::Enter => {
+                        if !self.filename_input.is_empty() {
+                            self.file.path = Some(PathBuf::from(&self.filename_input));
+                            let events = self.file.handle_event(FileEvent::Save, &self.buffer);
+                            self.dispatch_multiple_events(events);
+                            self.focus = FocusState::Editor;
+                            self.filename_input.clear();
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        self.filename_input.pop();
+                    }
+                    KeyCode::Char(c) => {
+                        self.filename_input.push(c);
+                    }
+                    _ => {}
+                },
+
+                FocusState::Editor => {
+                    for event in self.mode.handle_key(key_event, self.cursor.position) {
+                        self.event_handler.send(event);
+                    }
+                }
             }
         }
     }
@@ -95,8 +128,12 @@ impl App {
             }
 
             AppEvent::File(file_event) => {
-                let next_events = self.file.handle_event(file_event);
+                let next_events = self.file.handle_event(file_event, &self.buffer);
                 self.dispatch_multiple_events(next_events);
+            }
+
+            AppEvent::PromptForFilename => {
+                self.focus = FocusState::FilenamePrompt;
             }
 
             AppEvent::ChangeToMode(new_mode) => change_mode(new_mode, self),

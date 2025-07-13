@@ -22,6 +22,7 @@ pub enum AppEvent {
     Cursor(CursorEvent),
     File(FileEvent),
     ChangeToMode(EditorMode),
+    PromptForFilename,
     Quit,
 }
 

@@ -1,4 +1,5 @@
 use super::Mode;
+use crate::app::file::FileEvent;
 use crate::app::{cursor::CursorEvent, modes::EditorMode};
 use crate::event::AppEvent;
 use crate::types::position::Position;
@@ -30,6 +31,11 @@ impl Mode for NormalMode {
             KeyCode::Char('l') => events.push(AppEvent::Cursor(CursorEvent::MoveRight)),
             KeyCode::Char('j') => events.push(AppEvent::Cursor(CursorEvent::MoveDown)),
             KeyCode::Char('k') => events.push(AppEvent::Cursor(CursorEvent::MoveUp)),
+
+            KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                events.push(AppEvent::File(FileEvent::Save));
+            }
+
             KeyCode::Char('q') | KeyCode::Esc => events.push(AppEvent::Quit),
             KeyCode::Char('c' | 'C') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 events.push(AppEvent::Quit);
