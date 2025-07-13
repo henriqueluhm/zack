@@ -1,4 +1,4 @@
-use crate::{app::buffer::Buffer, event::AppEvent, ui::Component};
+use crate::{app::buffer::Buffer, event::AppEvent, ui::components::FocusableComponent};
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -9,6 +9,7 @@ pub struct File {
 #[derive(Clone, Debug)]
 pub enum FileEvent {
     Save,
+    SaveAs(PathBuf),
 }
 
 impl Default for File {
@@ -27,6 +28,11 @@ impl File {
 
         match event {
             FileEvent::Save => events.extend(self.save_file(buffer)),
+            FileEvent::SaveAs(path) => {
+                self.path = Some(path);
+
+                events.extend(self.save_file(buffer))
+            }
         }
 
         events
@@ -44,7 +50,7 @@ impl File {
                 }
             },
 
-            None => vec![AppEvent::ChangeFocus(Component::FilenamePrompt)],
+            None => vec![AppEvent::ChangeFocus(FocusableComponent::FilenamePrompt)],
         }
     }
 

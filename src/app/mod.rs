@@ -3,9 +3,9 @@ use crate::app::cursor::Cursor;
 use crate::app::file::File;
 use crate::app::modes::normal::NormalMode;
 use crate::app::modes::{Mode, change_mode};
-use crate::event::{AppEvent, Event, EventHandler, FileEvent};
-use crate::ui::Component;
-use crossterm::event::KeyCode;
+use crate::event::{AppEvent, Event, EventHandler};
+use crate::ui::components::FocusableComponent;
+use crate::ui::components::filename_prompt::FilenamePrompt;
 use ratatui::DefaultTerminal;
 use ratatui::Frame;
 use std::path::PathBuf;
@@ -18,13 +18,13 @@ pub mod modes;
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
-    pub focus: Component,
-    pub filename_input: String,
+    pub focus: FocusableComponent,
     pub mode: Box<dyn Mode>,
     pub cursor: Cursor,
     pub buffer: Buffer,
     pub file: File,
     pub event_handler: EventHandler,
+    pub filename_prompt: FilenamePrompt, // TODO: as component list grows, make a ComponentRegistry
 }
 
 impl Default for App {
@@ -42,8 +42,8 @@ impl App {
             mode: Box::new(NormalMode),
             cursor: Cursor::new(),
             event_handler: EventHandler::new(),
-            focus: Component::Editor,
-            filename_input: String::from(""),
+            focus: FocusableComponent::Editor,
+            filename_prompt: FilenamePrompt::new(),
         }
     }
 
@@ -82,30 +82,12 @@ impl App {
     fn handle_crossterm_event(&mut self, event: crossterm::event::Event) {
         if let crossterm::event::Event::Key(key_event) = event {
             match self.focus {
-                Component::FilenamePrompt => match key_event.code {
-                    KeyCode::Esc => {
-                        self.focus = Component::Editor;
-                        self.filename_input.clear();
+                FocusableComponent::FilenamePrompt => {
+                    for event in self.filename_prompt.handle_key(key_event) {
+                        self.event_handler.send(event);
                     }
-                    KeyCode::Enter => {
-                        if !self.filename_input.is_empty() {
-                            self.file.path = Some(PathBuf::from(&self.filename_input));
-                            let events = self.file.handle_event(FileEvent::Save, &self.buffer);
-                            self.dispatch_multiple_events(events);
-                            self.focus = Component::Editor;
-                            self.filename_input.clear();
-                        }
-                    }
-                    KeyCode::Backspace => {
-                        self.filename_input.pop();
-                    }
-                    KeyCode::Char(c) => {
-                        self.filename_input.push(c);
-                    }
-                    _ => {}
-                },
-
-                Component::Editor => {
+                }
+                FocusableComponent::Editor => {
                     for event in self.mode.handle_key(key_event, self.cursor.position) {
                         self.event_handler.send(event);
                     }
