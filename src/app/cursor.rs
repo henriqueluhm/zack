@@ -188,3 +188,94 @@ impl Cursor {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::buffer::Buffer;
+
+    fn buffer_with_lines(lines: &[&str]) -> Buffer {
+        let joined = lines.join("\n");
+        Buffer::new(joined)
+    }
+
+    #[test]
+    fn should_move_right_until_end_of_line() {
+        let buffer = buffer_with_lines(&["abc"]);
+        let mut cursor = Cursor::new();
+
+        cursor.handle_event(CursorEvent::MoveRight, &buffer);
+        assert_eq!(cursor.position.col, 1);
+
+        cursor.handle_event(CursorEvent::MoveRight, &buffer);
+        assert_eq!(cursor.position.col, 2);
+
+        cursor.handle_event(CursorEvent::MoveRight, &buffer);
+        assert_eq!(cursor.position.col, 3);
+
+        cursor.handle_event(CursorEvent::MoveRight, &buffer);
+        assert_eq!(cursor.position.col, 3, "Should not move past end of line");
+    }
+
+    #[test]
+    fn should_move_left_and_stop_at_start() {
+        let buffer = buffer_with_lines(&["abc"]);
+        let mut cursor = Cursor::new();
+        cursor.position.col = 2;
+
+        cursor.handle_event(CursorEvent::MoveLeft, &buffer);
+        assert_eq!(cursor.position.col, 1);
+
+        cursor.handle_event(CursorEvent::MoveLeft, &buffer);
+        assert_eq!(cursor.position.col, 0);
+
+        cursor.handle_event(CursorEvent::MoveLeft, &buffer);
+        assert_eq!(cursor.position.col, 0, "Should not go below column 0");
+    }
+
+    #[test]
+    fn should_move_down_and_up_across_lines_and_clamp_column() {
+        let buffer = buffer_with_lines(&["abc", "d", "efg"]);
+        let mut cursor = Cursor::new();
+        cursor.position.col = 2;
+
+        cursor.handle_event(CursorEvent::MoveDown, &buffer);
+        assert_eq!(cursor.position.line, 1);
+        assert_eq!(cursor.position.col, 1, "Should clamp to line 1's max col");
+
+        cursor.handle_event(CursorEvent::MoveDown, &buffer);
+        assert_eq!(cursor.position.line, 2);
+        assert_eq!(cursor.position.col, 1);
+
+        cursor.handle_event(CursorEvent::MoveUp, &buffer);
+        assert_eq!(cursor.position.line, 1);
+        assert_eq!(cursor.position.col, 1);
+
+        cursor.handle_event(CursorEvent::MoveUp, &buffer);
+        assert_eq!(cursor.position.line, 0);
+        assert_eq!(cursor.position.col, 1);
+    }
+
+    #[test]
+    fn should_move_to_line_start_and_end() {
+        let buffer = buffer_with_lines(&["abcd"]);
+        let mut cursor = Cursor::new();
+        cursor.position.col = 2;
+
+        cursor.handle_event(CursorEvent::MoveToLineStart, &buffer);
+        assert_eq!(cursor.position.col, 0);
+
+        cursor.handle_event(CursorEvent::MoveToLineEnd, &buffer);
+        assert_eq!(cursor.position.col, 4);
+    }
+
+    #[test]
+    fn should_set_position_within_bounds_and_clamp_if_needed() {
+        let buffer = buffer_with_lines(&["123", "4567"]);
+        let mut cursor = Cursor::new();
+
+        cursor.handle_event(CursorEvent::SetPosition { line: 5, col: 99 }, &buffer);
+        assert_eq!(cursor.position.line, 1);
+        assert_eq!(cursor.position.col, 4);
+    }
+}
