@@ -1,8 +1,8 @@
 //! Cursor management module for the Zack text editor.
 //!
-//! This module provides the `Cursor` struct which holds the current position
+//! This module provides the [`Cursor`] struct which holds the current position
 //! within the text buffer and methods to move or set the cursor position based
-//! on various user actions. It also defines `CursorEvent`, which represents
+//! on various user actions. It also defines [`CursorEvent`], which represents
 //! all possible cursor-related actions.
 
 use crate::app::{buffer::Buffer, modes::EditorMode};
