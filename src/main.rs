@@ -1,9 +1,10 @@
+use app::App;
+use std::{env, path::PathBuf};
+
 mod app;
 mod event;
 mod types;
 mod ui;
-
-use app::App;
 
 #[cfg(feature = "debug-logs")]
 fn init_logging() {
@@ -23,7 +24,15 @@ fn main() -> color_eyre::Result<()> {
     init_logging();
 
     let terminal = ratatui::init();
-    let result = App::new().run(terminal);
+
+    let maybe_path = env::args().nth(1).map(PathBuf::from);
+
+    let file_content = maybe_path
+        .as_ref()
+        .and_then(|path| std::fs::read_to_string(path).ok())
+        .unwrap_or_else(|| String::from(""));
+
+    let result = App::new(file_content, maybe_path).run(terminal);
 
     ratatui::restore();
 

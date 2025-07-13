@@ -1,5 +1,8 @@
+use std::path::PathBuf;
+
 use crate::app::buffer::Buffer;
 use crate::app::cursor::Cursor;
+use crate::app::file::File;
 use crate::app::modes::normal::NormalMode;
 use crate::app::modes::{Mode, change_mode};
 use crate::event::{AppEvent, Event, EventHandler};
@@ -8,6 +11,7 @@ use ratatui::Frame;
 
 pub mod buffer;
 pub mod cursor;
+pub mod file;
 pub mod modes;
 
 #[derive(Debug)]
@@ -16,24 +20,26 @@ pub struct App {
     pub mode: Box<dyn Mode>,
     pub cursor: Cursor,
     pub buffer: Buffer,
+    pub file: File,
     pub event_handler: EventHandler,
 }
 
 impl Default for App {
     fn default() -> Self {
-        Self {
-            running: true,
-            buffer: Buffer::new(),
-            mode: Box::new(NormalMode),
-            cursor: Cursor::new(),
-            event_handler: EventHandler::new(),
-        }
+        Self::new(String::from(""), None)
     }
 }
 
 impl App {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(initial_text: String, maybe_path: Option<PathBuf>) -> Self {
+        Self {
+            running: true,
+            buffer: Buffer::new(initial_text),
+            file: File::new(maybe_path),
+            mode: Box::new(NormalMode),
+            cursor: Cursor::new(),
+            event_handler: EventHandler::new(),
+        }
     }
 
     pub fn run(mut self, mut terminal: DefaultTerminal) -> color_eyre::Result<()> {
@@ -85,6 +91,11 @@ impl App {
 
             AppEvent::Buffer(buffer_event) => {
                 let next_events = self.buffer.handle_event(buffer_event);
+                self.dispatch_multiple_events(next_events);
+            }
+
+            AppEvent::File(file_event) => {
+                let next_events = self.file.handle_event(file_event);
                 self.dispatch_multiple_events(next_events);
             }
 

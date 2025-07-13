@@ -15,14 +15,14 @@ pub enum BufferEvent {
 
 impl Default for Buffer {
     fn default() -> Self {
-        Self::new()
+        Self::new(String::from(""))
     }
 }
 
 impl Buffer {
-    pub fn new() -> Self {
+    pub fn new(initial_text: String) -> Self {
         Self {
-            rope: Rope::from_str("Hello, Zack!"),
+            rope: Rope::from_str(&initial_text),
         }
     }
 
