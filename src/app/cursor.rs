@@ -1,3 +1,10 @@
+//! Cursor management module for the Zack text editor.
+//!
+//! This module provides the `Cursor` struct which holds the current position
+//! within the text buffer and methods to move or set the cursor position based
+//! on various user actions. It also defines `CursorEvent`, which represents
+//! all possible cursor-related actions.
+
 use crate::app::{buffer::Buffer, modes::EditorMode};
 use crate::event::AppEvent;
 use crate::types::position::Position;
@@ -8,11 +15,14 @@ use crossterm::{
 use ratatui::{Frame, layout::Rect};
 use std::io::{Write, stdout};
 
+/// Represents the text cursor, tracking its current line and column position.
 #[derive(Debug)]
 pub struct Cursor {
+    /// Current position of the cursor in the buffer.
     pub position: Position,
 }
 
+/// Events that can trigger cursor movement or repositioning.
 #[derive(Clone, Debug)]
 pub enum CursorEvent {
     MoveLeft,
@@ -33,12 +43,15 @@ impl Default for Cursor {
 }
 
 impl Cursor {
+    /// Creates a new `Cursor` positioned at the start of the buffer.
     pub fn new() -> Self {
         Self {
             position: Position::new(0, 0),
         }
     }
 
+    /// Handles a `CursorEvent`, possibly adjusting the cursor's position.
+    /// Returns any follow-up `AppEvent`s.
     pub fn handle_event(&mut self, event: CursorEvent, buffer: &Buffer) -> Vec<AppEvent> {
         let mut events = vec![];
 
@@ -61,6 +74,7 @@ impl Cursor {
         events
     }
 
+    /// Renders the cursor at the correct screen position with appropriate style.
     pub fn render_cursor(&self, frame: &mut Frame, current_mode: EditorMode) {
         let cursor_position = self.calculate_cursor_position(frame.area());
 
@@ -150,6 +164,7 @@ impl Cursor {
         }
     }
 
+    /// Calculates the actual terminal coordinates where the cursor should appear.
     fn calculate_cursor_position(&self, area: Rect) -> ratatui::layout::Position {
         let text_area = Rect {
             x: area.x + 1,
