@@ -267,4 +267,3 @@ mod tests {
         assert_eq!(buffer.len_lines(), 3);
     }
 }
-
