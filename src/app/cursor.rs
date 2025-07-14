@@ -23,7 +23,7 @@ pub struct Cursor {
 }
 
 /// Events that can trigger cursor movement or repositioning.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CursorEvent {
     MoveLeft,
     MoveRight,

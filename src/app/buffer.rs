@@ -23,7 +23,7 @@ pub struct Buffer {
 }
 
 /// Describes high-level buffer modification events.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BufferEvent {
     /// Inserts a character at a given position.
     InsertChar { char: char, position: Position },
@@ -126,9 +126,11 @@ impl Buffer {
             self.merge_with_line_above(position, &mut events);
         } else if position.col > 0 {
             let char_index = self.calculate_char_index(position);
-            self.rope.remove(char_index - 1..char_index);
 
-            events.push(AppEvent::Cursor(CursorEvent::MoveLeft));
+            if char_index > 0 {
+                self.rope.remove(char_index - 1..char_index);
+                events.push(AppEvent::Cursor(CursorEvent::MoveLeft));
+            }
         }
 
         events
@@ -143,12 +145,16 @@ impl Buffer {
         if char_index > 0 {
             self.rope.remove(char_index - 1..char_index);
 
+            let col_pos = if prev_line_len == 0 {
+                0
+            } else {
+                prev_line_len - 1
+            };
+
             events.push(AppEvent::Cursor(CursorEvent::SetLinePosition(
                 position.line - 1,
             )));
-            events.push(AppEvent::Cursor(CursorEvent::SetColPosition(
-                prev_line_len - 1,
-            )));
+            events.push(AppEvent::Cursor(CursorEvent::SetColPosition(col_pos)));
         }
     }
 
@@ -164,6 +170,101 @@ impl Buffer {
         events.push(AppEvent::Cursor(CursorEvent::MoveToLineStart));
 
         events
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::event::CursorEvent;
+
+    fn pos(line: usize, col: usize) -> Position {
+        Position::new(line, col)
+    }
+
+    #[test]
+    fn should_insert_character_at_correct_position() {
+        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+
+        let events = buffer.handle_event(BufferEvent::InsertChar {
+            char: 'x',
+            position: pos(0, 0),
+        });
+
+        let text = buffer.as_rope().to_string();
+
+        assert_eq!(text, "xHello, Zack!");
+        assert_eq!(events, vec![AppEvent::Cursor(CursorEvent::MoveRight)]);
+    }
+
+    #[test]
+    fn should_insert_newline_and_push_text_to_next_line() {
+        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+
+        let events = buffer.handle_event(BufferEvent::InsertNewline {
+            position: pos(0, 5),
+        });
+
+        let lines: Vec<_> = buffer.lines().map(|l| l.to_string()).collect();
+
+        assert_eq!(lines[0], "Hello\n");
+
+        assert!(lines[1].starts_with(", Zack!"));
+        assert!(events.contains(&AppEvent::Cursor(CursorEvent::MoveDown)));
+        assert!(events.contains(&AppEvent::Cursor(CursorEvent::MoveToLineStart)));
+    }
+
+    #[test]
+    fn should_delete_character_before_cursor() {
+        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+
+        buffer.handle_event(BufferEvent::DeleteChar {
+            position: pos(0, 1),
+        });
+
+        let text = buffer.as_rope().to_string();
+
+        assert_eq!(text, "ello, Zack!");
+    }
+
+    #[test]
+    fn should_merge_lines_when_deleting_at_start_of_line() {
+        let mut buffer = Buffer::new(String::from("Hello\nWorld"));
+
+        let events = buffer.handle_event(BufferEvent::DeleteChar {
+            position: pos(1, 0),
+        });
+
+        let text = buffer.as_rope().to_string();
+
+        assert_eq!(text, "HelloWorld");
+
+        assert!(events.contains(&AppEvent::Cursor(CursorEvent::SetLinePosition(0))));
+        assert!(events.contains(&AppEvent::Cursor(CursorEvent::SetColPosition(5)))); // Position after "Hello"
+    }
+
+    #[test]
+    fn should_clamp_column_to_max_visible() {
+        let buffer = Buffer::new(String::from("abc"));
+        let clamped = buffer.clamp_col_position(&Position::new(0, 100));
+
+        assert_eq!(clamped, 3);
+    }
+
+    #[test]
+    fn should_calculate_correct_char_index() {
+        let buffer = Buffer::new(String::from("abc\ndef"));
+        let index = buffer.calculate_char_index(Position::new(1, 2));
+
+        // Index 0–2 = "abc" (line 0, +1 for \n), line 1 starts at char 4
+        assert_eq!(index, 6); // "abc\n" = 4, "de" = index 4 + 2
+    }
+
+    #[test]
+    fn should_return_number_of_lines() {
+        let buffer = Buffer::new(String::from("line1\nline2\nline3"));
+
+        assert_eq!(buffer.len_lines(), 3);
     }
 }
 

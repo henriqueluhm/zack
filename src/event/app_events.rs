@@ -4,7 +4,7 @@ pub use crate::app::buffer::BufferEvent;
 pub use crate::app::cursor::CursorEvent;
 pub use crate::app::file::FileEvent;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AppEvent {
     Buffer(BufferEvent),
     Cursor(CursorEvent),

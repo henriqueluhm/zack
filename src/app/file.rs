@@ -6,7 +6,7 @@ pub struct File {
     pub path: Option<PathBuf>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FileEvent {
     Save,
     SaveAs(PathBuf),
