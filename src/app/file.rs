@@ -94,3 +94,81 @@ impl File {
         std::fs::write(path, content)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::buffer::Buffer;
+    use std::path::PathBuf;
+
+    fn create_buffer_with_text(text: &str) -> Buffer {
+        Buffer::new(text.to_string())
+    }
+
+    #[test]
+    fn should_create_file_with_none_path() {
+        let file = File::default();
+
+        assert!(file.path.is_none());
+    }
+
+    #[test]
+    fn should_create_file_with_some_path() {
+        let path = PathBuf::from("test.txt");
+        let file = File::new(Some(path.clone()));
+
+        assert_eq!(file.path, Some(path));
+    }
+
+    #[test]
+    fn should_return_empty_events_when_saving_to_valid_path() {
+        let path = PathBuf::from("test_save.txt");
+        let mut file = File::new(Some(path.clone()));
+        let buffer = create_buffer_with_text("Hello, Zack!");
+
+        let _ = std::fs::remove_file(&path);
+
+        let events = file.handle_event(FileEvent::Save, &buffer);
+
+        assert!(events.is_empty());
+
+        let saved_content = std::fs::read_to_string(&path).expect("File should exist");
+
+        assert_eq!(saved_content, "Hello, Zack!");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn should_update_path_and_save_on_save_as() {
+        let path = PathBuf::from("test_save_as.txt");
+        let mut file = File::default();
+        let buffer = create_buffer_with_text("New content");
+
+        let _ = std::fs::remove_file(&path);
+
+        let events = file.handle_event(FileEvent::SaveAs(path.clone()), &buffer);
+
+        assert!(events.is_empty());
+        assert_eq!(file.path, Some(path.clone()));
+
+        let saved_content = std::fs::read_to_string(&path).expect("File should exist");
+
+        assert_eq!(saved_content, "New content");
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn should_request_focus_change_when_saving_without_path() {
+        let mut file = File::default();
+        let buffer = create_buffer_with_text("Some text");
+
+        let events = file.handle_event(FileEvent::Save, &buffer);
+
+        assert_eq!(
+            events,
+            vec![AppEvent::ChangeFocus(FocusableComponent::FilenamePrompt)]
+        );
+    }
+}
