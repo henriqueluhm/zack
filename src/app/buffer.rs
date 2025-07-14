@@ -182,9 +182,13 @@ mod tests {
         Position::new(line, col)
     }
 
+    fn create_buffer_with_text(text: &str) -> Buffer {
+        Buffer::new(text.to_string())
+    }
+
     #[test]
     fn should_insert_character_at_correct_position() {
-        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+        let mut buffer = create_buffer_with_text("Hello, Zack!");
 
         let events = buffer.handle_event(BufferEvent::InsertChar {
             char: 'x',
@@ -199,7 +203,7 @@ mod tests {
 
     #[test]
     fn should_insert_newline_and_push_text_to_next_line() {
-        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+        let mut buffer = create_buffer_with_text("Hello, Zack!");
 
         let events = buffer.handle_event(BufferEvent::InsertNewline {
             position: pos(0, 5),
@@ -216,7 +220,7 @@ mod tests {
 
     #[test]
     fn should_delete_character_before_cursor() {
-        let mut buffer = Buffer::new(String::from("Hello, Zack!"));
+        let mut buffer = create_buffer_with_text("Hello, Zack!");
 
         buffer.handle_event(BufferEvent::DeleteChar {
             position: pos(0, 1),
@@ -229,7 +233,7 @@ mod tests {
 
     #[test]
     fn should_merge_lines_when_deleting_at_start_of_line() {
-        let mut buffer = Buffer::new(String::from("Hello\nWorld"));
+        let mut buffer = create_buffer_with_text("Hello\nWorld");
 
         let events = buffer.handle_event(BufferEvent::DeleteChar {
             position: pos(1, 0),
@@ -245,7 +249,7 @@ mod tests {
 
     #[test]
     fn should_clamp_column_to_max_visible() {
-        let buffer = Buffer::new(String::from("abc"));
+        let buffer = create_buffer_with_text("abc");
         let clamped = buffer.clamp_col_position(&Position::new(0, 100));
 
         assert_eq!(clamped, 3);
@@ -253,7 +257,7 @@ mod tests {
 
     #[test]
     fn should_calculate_correct_char_index() {
-        let buffer = Buffer::new(String::from("abc\ndef"));
+        let buffer = create_buffer_with_text("abc\ndef");
         let index = buffer.calculate_char_index(Position::new(1, 2));
 
         // Index 0–2 = "abc" (line 0, +1 for \n), line 1 starts at char 4
@@ -262,7 +266,7 @@ mod tests {
 
     #[test]
     fn should_return_number_of_lines() {
-        let buffer = Buffer::new(String::from("line1\nline2\nline3"));
+        let buffer = create_buffer_with_text("line1\nline2\nline3");
 
         assert_eq!(buffer.len_lines(), 3);
     }
