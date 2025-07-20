@@ -35,6 +35,7 @@ mod tests {
     #[test]
     fn should_create_position_with_correct_values() {
         let pos = Position::new(3, 7);
+
         assert_eq!(pos.line, 3);
         assert_eq!(pos.col, 7);
     }
@@ -43,6 +44,7 @@ mod tests {
     fn should_be_equal_when_same_line_and_col() {
         let a = Position::new(0, 0);
         let b = Position::new(0, 0);
+
         assert_eq!(a, b);
     }
 
@@ -50,6 +52,7 @@ mod tests {
     fn should_not_be_equal_when_different() {
         let a = Position::new(1, 2);
         let b = Position::new(2, 1);
+
         assert_ne!(a, b);
     }
 
@@ -58,6 +61,7 @@ mod tests {
         let a = Position::new(4, 4);
         let b = a;
         let c = a.clone();
+
         assert_eq!(a, b);
         assert_eq!(a, c);
     }
