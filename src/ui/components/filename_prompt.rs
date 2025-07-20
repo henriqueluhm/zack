@@ -103,3 +103,94 @@ impl FilenamePrompt {
         prompt.render(area, buf);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::event::AppEvent;
+    use crate::ui::components::FocusableComponent;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    fn key(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
+
+    #[test]
+    fn should_append_char_to_input_on_char_key() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.handle_key(key(KeyCode::Char('a')));
+        prompt.handle_key(key(KeyCode::Char('b')));
+
+        assert_eq!(prompt.input, "ab");
+    }
+
+    #[test]
+    fn should_remove_last_char_on_backspace() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.input = String::from("abc");
+        prompt.handle_key(key(KeyCode::Backspace));
+
+        assert_eq!(prompt.input, "ab");
+    }
+
+    #[test]
+    fn should_do_nothing_on_backspace_when_input_empty() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.input = String::new();
+        prompt.handle_key(key(KeyCode::Backspace));
+
+        assert_eq!(prompt.input, "");
+    }
+
+    #[test]
+    fn should_clear_input_and_change_focus_on_esc() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.input = String::from("filename.txt");
+
+        let events = prompt.handle_key(key(KeyCode::Esc));
+
+        assert!(events.contains(&AppEvent::ChangeFocus(FocusableComponent::Editor)));
+        assert_eq!(prompt.input, "");
+    }
+
+    #[test]
+    fn should_emit_saveas_and_clear_input_on_enter_with_non_empty_input() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.input = String::from("file.txt");
+
+        let events = prompt.handle_key(key(KeyCode::Enter));
+
+        assert_eq!(prompt.input, "");
+        assert!(matches!(
+            events.iter().find(|e| matches!(e, AppEvent::File(_))),
+            Some(AppEvent::File(_))
+        ));
+        assert!(events.contains(&AppEvent::ChangeFocus(FocusableComponent::Editor)));
+    }
+
+    #[test]
+    fn should_do_nothing_on_enter_with_empty_input() {
+        let mut prompt = FilenamePrompt::new();
+
+        prompt.input = String::new();
+
+        let events = prompt.handle_key(key(KeyCode::Enter));
+
+        assert!(events.is_empty());
+        assert_eq!(prompt.input, "");
+    }
+
+    #[test]
+    fn should_do_nothing_on_other_keys() {
+        let mut prompt = FilenamePrompt::new();
+
+        let events = prompt.handle_key(key(KeyCode::Tab));
+
+        assert!(events.is_empty());
+    }
+}
